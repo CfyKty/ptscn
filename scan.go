@@ -17,7 +17,7 @@ func worker(ports, results chan int) {
 		//fmt.Println(fullAddress)
 		conn, err := net.Dial("tcp", fullAddress)
 		if err == nil {
-			conn.Close()
+			conn.Close() // exception could occur
 			results <- p
 		} else {
 
@@ -27,7 +27,10 @@ func worker(ports, results chan int) {
 }
 
 func main() {
-	flag.IntVar(&maxPort, "Ports", 1024, "Ports to scan")
+	flag.IntVar(&maxPort, "ports", 1024, "Ports to scan")
+	turboPtr := flag.Bool("turbo", false, "Increases scan speed at the cost of accuracy. Will overwrite manual worker settings")
+	workers := flag.Int("workers", 100, "Number of workers to user. Default is 100. Can cause inaccuracy if too high")
+
 	flag.Parse()
 	if len(flag.Args()) < 1 {
 		fmt.Println("Incorrect ")
@@ -35,9 +38,14 @@ func main() {
 	}
 	addresses = flag.Args()[0]
 
+	if *turboPtr {
+		*workers = 120
+	}
+
+	fmt.Printf("Turbo activated. Scanning with %d workers \n", *workers)
 	fmt.Printf("Scanning %s...\n", addresses)
 
-	ports := make(chan int, 100) // worker number
+	ports := make(chan int, *workers) // worker number
 	results := make(chan int)
 	var openports []int
 
